@@ -2,13 +2,18 @@ import os
 import numpy as np
 import cv2
 import argparse
+import shutil
 from collections import OrderedDict
 
 
-def get_parser():
+def CRAFT_get_parser():
     result_folder = './result/'
-    if not os.path.isdir(result_folder):
-        os.mkdir(result_folder)
+    if os.path.exists(result_folder):
+        shutil.rmtree(result_folder)
+    os.mkdir(result_folder)
+
+    os.mkdir("./result/CRAFT")
+    os.mkdir("./result/text_recognition")
 
     parser = argparse.ArgumentParser(description='CRAFT Text Detection')
     parser.add_argument('--trained_model', default='weights/craft_mlt_25k.pth', type=str, help='pretrained model')
@@ -21,12 +26,13 @@ def get_parser():
     parser.add_argument('--poly', default=False, action='store_true', help='enable polygon type')
     parser.add_argument('--show_time', default=False, action='store_true', help='show processing time')
     parser.add_argument('--test_folder', default='./data', type=str, help='folder path to input images')
-    parser.add_argument('--refine', default=False, action='store_true', help='enable link refiner')
+    parser.add_argument('--refine', default=True, action='store_true', help='enable link refiner')
     parser.add_argument('--refiner_model', default='weights/craft_refiner_CTW1500.pth', type=str,
                         help='pretrained refiner model')
 
     args = parser.parse_args()
     return args
+
 
 def copyStateDict(state_dict):
     if list(state_dict.keys())[0].startswith("module"):
@@ -38,4 +44,3 @@ def copyStateDict(state_dict):
         name = ".".join(k.split(".")[start_idx:])
         new_state_dict[name] = v
     return new_state_dict
-
