@@ -4,6 +4,8 @@ import cv2
 import argparse
 import shutil
 from collections import OrderedDict
+from utils.rectification import *
+from difflib import SequenceMatcher
 
 
 def CRAFT_get_parser():
@@ -35,7 +37,6 @@ def CRAFT_get_parser():
 
 
 def text_get_parser():
-
     parser = argparse.ArgumentParser(description='Text Recognition')
     parser.add_argument('--image_folder', required=False, help='path to image_folder which contains text images')
     parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
@@ -76,3 +77,48 @@ def copyStateDict(state_dict):
         name = ".".join(k.split(".")[start_idx:])
         new_state_dict[name] = v
     return new_state_dict
+
+
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
+
+
+def identify_phase(predictions):
+    max_score = 0
+
+    # Strict checking
+
+    if "auto" in predictions and "service" in predictions:
+        return "Main Menu"
+
+    if "Auto Operation" in predictions:
+        return "Auto Operation"
+
+    if "Chamber Door Control" in predictions or \
+            "Chamber Temperature" in predictions:
+        return "Chamber Door Control"
+
+    if "Wiper/Elevator Position" in predictions or \
+            ("Dose" in predictions and "Home" in predictions):
+        return "Wiper/Elevator Position"
+
+    # Flexible checking
+
+    for prediction in predictions:
+        for phase in WORD_PHASE_MAPPING.keys():
+            max_score = max(max_score, similar(prediction, phase))
+
+    if max_score < 0.4:
+        return "None"
+
+    for prediction in predictions:
+        for phase in WORD_PHASE_MAPPING.keys():
+            if similar(prediction, phase) == max_score:
+                return WORD_PHASE_MAPPING[phase]
+
+    # print(list(WORD_PHASE_MAPPING.keys())[scores.index(max(scores))])
+
+
+def rectify_predictions(phase, predictions):
+    rectified = []
+    return rectified

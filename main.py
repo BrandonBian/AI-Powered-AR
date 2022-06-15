@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from tqdm import tqdm
 from PIL import Image
+from collections import defaultdict
 
 from utils.my_utils import *
 from utils.craft import CRAFT
@@ -225,7 +226,7 @@ def demo(model, converter, opt, roi):
         return predict_list
 
 
-def inference(craft_args, text_args):
+def inference(craft_args, text_args, horizontal_thresh, vertical_thresh):
     image_list, _, _ = file_utils.get_files(craft_args.test_folder)
     craft_result = "./result/CRAFT/"
 
@@ -245,52 +246,98 @@ def inference(craft_args, text_args):
     """Inference"""
 
     # load data
+
     for k, image_path in enumerate(tqdm(image_list, desc="Performing Inference")):
-        print("Test image {:d}/{:d}: {:s}".format(k + 1, len(image_list), image_path), end='\r')
-        image = imgproc.loadImage(image_path)
+        try:
+            print("Test image {:d}/{:d}: {:s}".format(k + 1, len(image_list), image_path), end='\r')
+            image = imgproc.loadImage(image_path)
 
-        bboxes, polys, score_text = test_net(craft_args, net, image, craft_args.text_threshold,
-                                             craft_args.link_threshold, craft_args.low_text,
-                                             craft_args.cuda, craft_args.poly, refine_net)
+            bboxes, polys, score_text = test_net(craft_args, net, image, craft_args.text_threshold,
+                                                 craft_args.link_threshold, craft_args.low_text,
+                                                 craft_args.cuda, craft_args.poly, refine_net)
 
-        # TODO: group together text regions that are very close to each other
-        # bboxes: [[top_left], [top_right], [bottom_right], [bottom_left]], each is [horizontal pixel, vertical pixel]
+            # TODO: group together text regions that are very close to each other
+            # bboxes: [[top_left], [top_right], [bottom_right], [bottom_left]], each is [vertical pixel, horizontal pixel]
+            # mapping: <key, val> = <bbox id, [coordinates]>
 
-        if len(bboxes) != 0:
-            image_tensors = []
-            transform = ResizeNormalize((text_args.imgW, text_args.imgH))
-            for bbox in bboxes:
-                xxmin = int(np.min(bbox[:, 0]))
-                xxmax = int(np.max(bbox[:, 0]))
-                yymin = int(np.min(bbox[:, 1]))
-                yymax = int(np.max(bbox[:, 1]))
+            stack = [bboxes[0]]
 
-                if xxmin < 0:
-                    xxmin = 0
-                if xxmax < 0:
-                    xxmax = 0
-                if yymin < 0:
-                    yymin = 0
-                if yymax < 0:
-                    yymax = 0
+            for bbox in bboxes[1:]:
 
-                roi = np.array(image[yymin:yymax, xxmin:xxmax])
-                roi_pil = Image.fromarray(roi).convert('L')
-                image_tensors.append(transform(roi_pil))
+                prev = stack.pop()
+                this = bbox
 
-            image_tensors = torch.cat([t.unsqueeze(0) for t in image_tensors], 0)
-            predict_list = demo(model=model, converter=converter, opt=text_args, roi=image_tensors)
+                top_left_x = this[0][1]
+                top_left_y = this[0][0]
+                bottom_left_x = this[3][1]
+                bottom_left_y = this[3][0]
 
-        # Save CRAFT results
-        filename, file_ext = os.path.splitext(os.path.basename(image_path))
-        mask_file = craft_result + "/res_" + filename + '_mask.jpg'
-        cv2.imwrite(mask_file, score_text)
+                top_right_x = prev[1][1]
+                top_right_y = prev[1][0]
+                bottom_right_x = prev[2][1]
+                bottom_right_y = prev[2][0]
 
-        file_utils.saveResult(image_path, image[:, :, ::-1], polys, dirname=craft_result)
+                if abs(top_left_x - top_right_x) < horizontal_thresh and \
+                        abs(bottom_left_x - bottom_right_x) < horizontal_thresh and \
+                        abs(top_left_y - top_right_y) < vertical_thresh and \
+                        abs(bottom_left_y - bottom_right_y) < vertical_thresh:
+                    # merge two bboxes (prev and this) into one
+                    # print("Merge!")
+                    merged = [prev[0], bbox[1], bbox[2], prev[3]]
+                    stack.append(np.array(merged))
+                else:
+                    stack.append(prev)
+                    stack.append(bbox)
+
+            bboxes = stack
+            phase = "None"
+            # Text recognition based on the regions obtained from CRAFT
+            if len(bboxes) != 0:
+                image_tensors = []
+                transform = ResizeNormalize((text_args.imgW, text_args.imgH))
+                for bbox in bboxes:
+                    xxmin = int(np.min(bbox[:, 0]))
+                    xxmax = int(np.max(bbox[:, 0]))
+                    yymin = int(np.min(bbox[:, 1]))
+                    yymax = int(np.max(bbox[:, 1]))
+
+                    if xxmin < 0:
+                        xxmin = 0
+                    if xxmax < 0:
+                        xxmax = 0
+                    if yymin < 0:
+                        yymin = 0
+                    if yymax < 0:
+                        yymax = 0
+
+                    roi = np.array(image[yymin:yymax, xxmin:xxmax])
+                    roi_pil = Image.fromarray(roi).convert('L')
+                    image_tensors.append(transform(roi_pil))
+
+                image_tensors = torch.cat([t.unsqueeze(0) for t in image_tensors], 0)
+                predict_list = demo(model=model, converter=converter, opt=text_args, roi=image_tensors)
+                phase = identify_phase(predict_list)
+
+            # Save CRAFT results
+            # filename, file_ext = os.path.splitext(os.path.basename(image_path))
+            # mask_file = craft_result + "/res_" + filename + '_mask.jpg'
+            # cv2.imwrite(mask_file, score_text)
+
+            file_utils.saveResult(image_path, image[:, :, ::-1], bboxes, phase, dirname=craft_result)
+
+        except:
+            print(f"NO TEXT DETECTION: {image_path}")
+            image = imgproc.loadImage(image_path)
+            filename, file_ext = os.path.splitext(os.path.basename(image_path))
+            res_img_file = "result\\CRAFT\\" + "res_" + filename + '.jpg'
+            cv2.imwrite(res_img_file, image)
+            continue
 
 
 if __name__ == "__main__":
     craft_args = CRAFT_get_parser()
     text_args = text_get_parser()
 
-    inference(craft_args, text_args)
+    inference(craft_args, text_args,
+              horizontal_thresh=200,
+              vertical_thresh=50)
