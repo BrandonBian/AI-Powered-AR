@@ -28,4 +28,4 @@ def video2frames(path, skip=0):
 
 
 if __name__ == "__main__":
-    video2frames("./video/All Lights On 2.MOV", skip=10)
+    video2frames("./video/Reflection_Test.mp4", skip=10)

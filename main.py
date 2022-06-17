@@ -226,7 +226,8 @@ def demo(model, converter, opt, roi):
         return predict_list
 
 
-def inference(craft_args, text_args, horizontal_thresh, vertical_thresh):
+def inference(craft_args, text_args, horizontal_thresh, vertical_thresh, data):
+    craft_args.test_folder = data
     image_list, _, _ = file_utils.get_files(craft_args.test_folder)
     craft_result = "./result/CRAFT/"
 
@@ -318,19 +319,25 @@ def inference(craft_args, text_args, horizontal_thresh, vertical_thresh):
                 predict_list = demo(model=model, converter=converter, opt=text_args, roi=image_tensors)
                 phase = identify_phase(predict_list)
 
+                predict_list = rectify_predictions(phase, predict_list)
+
             # Save CRAFT results
-            # filename, file_ext = os.path.splitext(os.path.basename(image_path))
+            filename, file_ext = os.path.splitext(os.path.basename(image_path))
             # mask_file = craft_result + "/res_" + filename + '_mask.jpg'
             # cv2.imwrite(mask_file, score_text)
+
+            text_save_dir = f"result\\text_recognition\\res_{filename}.txt"
+            with open(text_save_dir, 'w') as f:
+                f.write(str(predict_list))
 
             file_utils.saveResult(image_path, image[:, :, ::-1], bboxes, phase, dirname=craft_result)
 
         except:
             print(f"NO TEXT DETECTION: {image_path}")
-            image = imgproc.loadImage(image_path)
-            filename, file_ext = os.path.splitext(os.path.basename(image_path))
-            res_img_file = "result\\CRAFT\\" + "res_" + filename + '.jpg'
-            cv2.imwrite(res_img_file, image)
+            # image = imgproc.loadImage(image_path)
+            # filename, file_ext = os.path.splitext(os.path.basename(image_path))
+            # res_img_file = "result\\CRAFT\\" + "res_" + filename + '.jpg'
+            # cv2.imwrite(res_img_file, image)
             continue
 
 
@@ -340,4 +347,5 @@ if __name__ == "__main__":
 
     inference(craft_args, text_args,
               horizontal_thresh=200,
-              vertical_thresh=50)
+              vertical_thresh=50,
+              data="./data/Baseline_Test")

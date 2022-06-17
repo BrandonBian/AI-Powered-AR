@@ -86,39 +86,136 @@ def similar(a, b):
 def identify_phase(predictions):
     max_score = 0
 
-    # Strict checking
+    """Strict checking"""
 
+    # Main Menu
     if "auto" in predictions and "service" in predictions:
         return "Main Menu"
 
-    if "Auto Operation" in predictions:
+    # Auto Operation
+    if "auto" in predictions and "operation" in predictions or "autooperation" in predictions:
         return "Auto Operation"
 
-    if "Chamber Door Control" in predictions or \
-            "Chamber Temperature" in predictions:
+    # Chamber Door Control
+    if "chamberdoorcontrol" in predictions or "doorinterlock" in predictions:
         return "Chamber Door Control"
 
-    if "Wiper/Elevator Position" in predictions or \
-            ("Dose" in predictions and "Home" in predictions):
+    # Wiper/Elevator Position
+    if "substratethickness" in predictions or ("Dose" in predictions and "Home" in predictions):
         return "Wiper/Elevator Position"
 
-    # Flexible checking
+    # Log In/Out
+    if "loginlout" in predictions or "loginlout" in predictions or "userloggedin" in predictions:
+        return "Log In/Out"
+
+    # Machine Status
+    if "argonpressure" in predictions or "machinestatus" in predictions or \
+            ("machine" in predictions and "status" in predictions):
+        return "Machine Status"
+
+    # Manual Control
+    if "manualcontrol" in predictions or ("manual" in predictions and "control" in predictions):
+        return "Manual Control"
+
+    # Semi-Auto Chamber Preparation
+    if "chamberpreparation" in predictions or ("duration" in predictions and "prep" in predictions) or \
+            ("with" in predictions and "vacuum" in predictions) or (
+            "without" in predictions and "vacuum" in predictions):
+        return "Semi-Auto Chamber Preparation"
+
+    # Service Menu
+    if "servicemenu" in predictions:
+        return "Service Menu"
+
+    # Input Monitor
+    if "inputmonitor" in predictions:
+        return "Input Monitor"
+
+    # Output Monitor
+    if "outputmonitor" in predictions or ("prev" in predictions and "output" in predictions):
+        return "Output Monitor"
+
+    # Analogue I/O
+    if "analoguelio" in predictions or "spareoutput" in predictions:
+        return "Analogue I/O"
+
+    # Servo Control Addresses
+    if "plcinputs" in predictions or "plcoutputs" in predictions or "pleinputs" in predictions or \
+            "pleoutputs" in predictions:
+        return "Servo Control Addresses"
+
+    # Network Addresses
+    if "networkaddresses" in predictions or "pcipaddresses" in predictions:
+        return "Network Addresses"
+
+    # Laser Menu
+    if "lasermenu" in predictions:
+        return "Laser Menu"
+
+    # System Tests
+    if "runabovetests" in predictions or "systemitests" in predictions:
+        return "System Tests"
+
+    # RBV Settings
+    if "rbvsettings" in predictions or ("fitted" in predictions or "confirm" in predictions):
+        return "RBV Settings"
+
+    # PC Power Control
+    if "override" in predictions and "enabled" in predictions:
+        return "PC Power Control"
+
+    # User Settings
+    if "usersettings" in predictions or ("complete" in predictions and "accepted" in predictions):
+        return "User Settings"
+
+    # Alarm/Events
+    # No good targets...
+
+    # Alarm/Event History
+    # No good targets
+
+    # Elevator Heater
+    if "elevatorheater" in predictions or "settemperature" in predictions:
+        return "Elevator Heater"
+
+    """Flexible checking"""
 
     for prediction in predictions:
-        for phase in WORD_PHASE_MAPPING.keys():
+        for phase in PHASE_WORD_MAPPING.keys():
             max_score = max(max_score, similar(prediction, phase))
 
     if max_score < 0.4:
         return "None"
 
     for prediction in predictions:
-        for phase in WORD_PHASE_MAPPING.keys():
+        for phase in PHASE_WORD_MAPPING.keys():
             if similar(prediction, phase) == max_score:
-                return WORD_PHASE_MAPPING[phase]
+                return phase
 
     # print(list(WORD_PHASE_MAPPING.keys())[scores.index(max(scores))])
 
 
 def rectify_predictions(phase, predictions):
     rectified = []
+
+    for prediction in predictions:
+
+        rectification = None
+        max_score = 0
+
+        for word in PHASE_WORD_MAPPING[phase]:
+            score = similar(prediction, word)
+            if score > max_score:
+                max_score = score
+                rectification = word
+
+        if max_score > 0.5:
+            rectified.append(rectification)
+        else:
+            rectified.append(prediction)
+
+    # print(predictions)
+    # print(rectified)
+    # print()
+
     return rectified
