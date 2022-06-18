@@ -149,24 +149,66 @@ PHASE_WORD_MAPPING = {
         "Build Names",
         "RESET",
         "EMERGENCY STOP OPERATED!"
-    ]
-}
+    ],
 
-# WORD_PHASE_MAPPING = {
-#     "Auto Operation": "Auto Operation",
-#     "Build Names": "Build Names",
-#     "Chamber Pressure": "Chamber Door Control",
-#     "Machine Status": "Machine Status",
-#     "Manual Control": "Manual Control",
-#     "Semi-Auto Chamber Preparation": "Semi-Auto Chamber Preparation",
-#     "Wiper/Elevator Position": "Wiper/Elevator Position",
-#     "Set Time And Date": "Set Time And Date",
-#     "Servo Control Addresses": "Servo Control Addresses",
-#     "Alarm/Event History": "Servo Control Addresses",
-#     "Alarm/Events": "Alarm/Events",
-#     "Elevator Heater": "Alarm/Events",
-#     "User Settings": "User Settings",
-#     "PC Power Control": "PC Power Control",
-#     "RBV Settings": "RBV Settings",
-#     "System Tests": "System Tests",
-# }
+    "RBV Settings": [
+        "Esc.",
+        "LIGHT",
+        "RBV Settings"
+    ],
+    "Service Menu": [
+        "Sec.",
+        "Service Menu",
+        "Set Time and Date",
+        "Laser Menu",
+        "I/O Monitor",
+        "PC Comms Monitor",
+        "Network Addresses",
+        "System Tests",
+        "RS232 Comms",
+        "RBV Settings",
+        "User Settings",
+        "PC On/Off Override",
+        "Run Counters"
+    ],
+
+    "O2 RS232 ppm Strings": [
+        "O2 RS232 ppm Strings"
+    ],
+
+    "System Tests": [
+        "Overpressure Test",
+        "Vaccum Test",
+        "Gas Flow Test",
+        "Run Above Tests",
+        "Esc.",
+        "System Tests"
+    ],
+
+    "User Settings": [
+        "User Settings",
+        "Esc.",
+        "LIGHT",
+        "O2 ppm Target",
+        "Hold Inert Until",
+        "Light On Time (Min)",
+        "Recirc Pump Speed (Hz)",
+        "Reduced Pump Speed"
+    ],
+
+    "Input Monitor": [
+        "Input Monitor"
+    ],
+    "Output Monitor": [
+        "Output Monitor"
+    ],
+    "Set Time and Date": [
+        "Set Time and Date"
+    ],
+    "Alarm/Events": [],
+    "Alarm/Events History": [],
+    "Elevator Heater": [],
+    "Laser Menu": [],
+    "Network Addresses": [],
+    "PC Power Control": []
+}

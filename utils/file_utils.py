@@ -67,17 +67,17 @@ def saveResult(img_file, img, boxes, phase, dirname='./result/', verticals=None,
 
         if texts is not None:
             font = cv2.FONT_HERSHEY_SIMPLEX
-            font_scale = 0.5
+            font_scale = 1.5
             cv2.putText(img, "{}".format(texts[i]), (poly[0][0] + 1, poly[0][1] + 1), font, font_scale, (0, 0, 0),
-                        thickness=1)
-            cv2.putText(img, "{}".format(texts[i]), tuple(poly[0]), font, font_scale, (0, 255, 255), thickness=1)
+                        thickness=2)
+            cv2.putText(img, "{}".format(texts[i]), tuple(poly[0]), font, font_scale, (0, 255, 255), thickness=2)
 
     phase = f"Phase: {phase}"
     cv2.putText(img, phase, org=(100, 100),
                 fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                fontScale=3,
+                fontScale=2,
                 color=(0, 255, 0),
-                thickness=3,
+                thickness=2,
                 lineType=cv2.LINE_AA)
 
     # with open(res_file, 'w') as f:

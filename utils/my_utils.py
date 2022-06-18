@@ -198,6 +198,9 @@ def identify_phase(predictions):
 def rectify_predictions(phase, predictions):
     rectified = []
 
+    if phase not in PHASE_WORD_MAPPING.keys():
+        return predictions
+
     for prediction in predictions:
 
         rectification = None
@@ -213,9 +216,5 @@ def rectify_predictions(phase, predictions):
             rectified.append(rectification)
         else:
             rectified.append(prediction)
-
-    # print(predictions)
-    # print(rectified)
-    # print()
 
     return rectified

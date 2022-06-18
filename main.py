@@ -176,6 +176,7 @@ def contour_detection():
 
 def demo(model, converter, opt, roi):
     predict_list = []
+    confidence_list = []
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     with torch.no_grad():
@@ -222,8 +223,9 @@ def demo(model, converter, opt, roi):
             confidence_score = pred_max_prob.cumprod(dim=0)[-1]
             # print(f'\t{pred:25s}\t{confidence_score:0.4f}')
             predict_list.append(pred)
+            confidence_list.append(confidence_score)
 
-        return predict_list
+        return predict_list, confidence_list
 
 
 def inference(craft_args, text_args, horizontal_thresh, vertical_thresh, data):
@@ -316,7 +318,7 @@ def inference(craft_args, text_args, horizontal_thresh, vertical_thresh, data):
                     image_tensors.append(transform(roi_pil))
 
                 image_tensors = torch.cat([t.unsqueeze(0) for t in image_tensors], 0)
-                predict_list = demo(model=model, converter=converter, opt=text_args, roi=image_tensors)
+                predict_list, confidence_list = demo(model=model, converter=converter, opt=text_args, roi=image_tensors)
                 phase = identify_phase(predict_list)
 
                 predict_list = rectify_predictions(phase, predict_list)
@@ -330,7 +332,13 @@ def inference(craft_args, text_args, horizontal_thresh, vertical_thresh, data):
             with open(text_save_dir, 'w') as f:
                 f.write(str(predict_list))
 
-            file_utils.saveResult(image_path, image[:, :, ::-1], bboxes, phase, dirname=craft_result)
+            conf_save_dir = f"result\\text_recognition\\confidence.txt"
+            conf_avg = (sum(confidence_list) / len(confidence_list)).tolist()
+            with open(conf_save_dir, 'a+') as f:
+                f.write(str(conf_avg) + '\n')
+
+            file_utils.saveResult(image_path, image[:, :, ::-1], bboxes, phase, dirname=craft_result,
+                                  texts=predict_list)
 
         except:
             print(f"NO TEXT DETECTION: {image_path}")
@@ -348,4 +356,4 @@ if __name__ == "__main__":
     inference(craft_args, text_args,
               horizontal_thresh=200,
               vertical_thresh=50,
-              data="./data/Baseline_Test")
+              data="./data/Handheld_Test")
